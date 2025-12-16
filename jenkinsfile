@@ -6,14 +6,13 @@ pipeline {
         DOCKER_IMAGE          = 'pruddie/python-app-ci-cd:v1.0.0'
         EC2_USER              = 'ec2-user'
         EC2_HOST              = '3.94.102.254'
-        APP_PORT_HOST         = '8082'   // Port you visit in browser
-        APP_PORT_CONTAINER    = '8000'   // Django internal port
+        APP_PORT_HOST         = '8082'
+        APP_PORT_CONTAINER    = '8000'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Using HTTPS URL and your PAT credential as requested
                 git branch: 'main', 
                     credentialsId: 'github-pat-credential', 
                     url: 'https://github.com/Cwendee/python-app-ci-cd.git'
@@ -23,7 +22,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // This builds using the Dockerfile in your repo
                     sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
@@ -41,8 +39,6 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                // We use 'withCredentials' instead of 'sshagent'
-                // This manually maps the key to a temporary file path
                 withCredentials([sshUserPrivateKey(credentialsId: 'mypython-key', keyFileVariable: 'SSH_KEY')]) {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${EC2_USER}@${EC2_HOST} '
@@ -54,13 +50,14 @@ pipeline {
                 }
             }
         }
+    }
 
     post {
         success {
-            echo "Deployment successful! Access your app at http://${EC2_HOST}:${APP_PORT_HOST}"
+            echo "Deployment successful! Access at http://${EC2_HOST}:${APP_PORT_HOST}"
         }
         failure {
-            echo "Deployment failed. Check the logs above."
+            echo "Deployment failed."
         }
     }
 }
