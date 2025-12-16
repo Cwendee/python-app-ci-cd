@@ -41,34 +41,19 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                // This ID must match exactly the one in Manage Jenkins -> Credentials
-                sshagent(['mypython-key']) {
+                // We use 'withCredentials' instead of 'sshagent'
+                // This manually maps the key to a temporary file path
+                withCredentials([sshUserPrivateKey(credentialsId: 'mypython-key', keyFileVariable: 'SSH_KEY')]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
-                            # Ensure Docker is running (Amazon Linux 2/2023)
-                            if ! command -v docker &> /dev/null; then
-                                sudo yum update -y
-                                sudo yum install -y docker
-                                sudo systemctl start docker
-                                sudo systemctl enable docker
-                            fi
-
-                            # Pull the latest image
+                        ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${EC2_USER}@${EC2_HOST} '
                             sudo docker pull ${DOCKER_IMAGE}
-
-                            # Stop and remove old container if it exists
                             sudo docker rm -f python_app || true
-
-                            # Run the new container
-                            sudo docker run -d --name python_app \
-                                -p ${APP_PORT_HOST}:${APP_PORT_CONTAINER} \
-                                ${DOCKER_IMAGE}
+                            sudo docker run -d --name python_app -p ${APP_PORT_HOST}:${APP_PORT_CONTAINER} ${DOCKER_IMAGE}
                         '
                     """
                 }
             }
         }
-    }
 
     post {
         success {
