@@ -39,7 +39,7 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'final-success-key', keyFileVariable: 'SSH_KEY')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'mypython-key.pem', keyFileVariable: 'SSH_KEY')]) {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${EC2_USER}@${EC2_HOST} '
                             sudo docker pull ${DOCKER_IMAGE}
